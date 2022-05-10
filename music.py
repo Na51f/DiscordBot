@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import youtube_dl
+import os
 
 
 class Music(commands.Cog):
@@ -9,11 +10,17 @@ class Music(commands.Cog):
         self.paused = False
 
     @commands.command()
+    async def repeat(self, ctx, arg):
+        await ctx.send(arg)
+
+    @commands.command()
     async def join(self, ctx):
         if ctx.author.voice is None:
             await ctx.send("You're not in a voice channel")
         vc = ctx.author.voice.channel
         if ctx.voice_client is None:
+            await vc.connect()
+        else:
             await ctx.voice_client.move_to(vc)
 
     @commands.command()
@@ -21,19 +28,35 @@ class Music(commands.Cog):
         await ctx.voice_client.disconnect()
         await ctx.send('Disconnected.')
 
-    @commands.command()
+    @commands.command()  # TODO Add queue of songs
     async def play(self, ctx, url):
-        ctx.voice_client.stop()
-        ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1'
-                                            '-reconnect_delay_max 5', 'options': '-vn'}
-        vdl_options = {'format':"bestaudio"}
-        vc = ctx.voice_client
+        is_present = os.path.isfile("song.mp3")
+        try:
+            if is_present:
+                os.remove("song.mp3")
+        except PermissionError:
+            await ctx.send("Wait for next song.")
+            return
 
-        with youtube_dl.YoutubeDL(vdl_options) as ydl:
-            info = ydl.extract_info(url, download=False)
-            url2 = info['formats'][0]['url']
-            source = await discord.FFmpegOpusAudio.from_probe(url2, **ffmpeg_options)
-            vc.play(source)
+        await self.join(ctx)
+
+        ydl_opts = {
+            'format': 'bestaudio',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': '.mp3',
+                'preferredquality': '192',
+            }],
+        }
+
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        for file in os.listdir("./queue/"):
+            if file.endswith(".mp3"):
+                os.rename(file, "song.mp3")
+
+        ctx.voice_client.play(discord.FFmpegPCMAudio("song.mp3"))
 
     @commands.command()
     async def pause(self, ctx):
