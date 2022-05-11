@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
-import music
+import bot
 
-cogs = [music]
+cogs = [bot]
 
 client = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 

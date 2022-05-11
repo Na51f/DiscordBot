@@ -3,8 +3,7 @@ from discord.ext import commands
 import youtube_dl
 import os
 
-
-class Music(commands.Cog):
+class Bot(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.paused = False
@@ -23,40 +22,36 @@ class Music(commands.Cog):
         else:
             await ctx.voice_client.move_to(vc)
 
-    @commands.command()
-    async def disconnect(self, ctx):
-        await ctx.voice_client.disconnect()
-        await ctx.send('Disconnected.')
-
-    @commands.command()  # TODO Add queue of songs
+    @commands.command(aliases=['p'])
     async def play(self, ctx, url):
-        is_present = os.path.isfile("song.mp3")
+        vc = ctx.voice_client
+        song_there = os.path.isfile("song.mp3")
         try:
-            if is_present:
+            if song_there:
                 os.remove("song.mp3")
         except PermissionError:
-            await ctx.send("Wait for next song.")
+            await ctx.send("Wait for the current playing music to end or use the 'stop' command")
             return
 
-        await self.join(ctx)
-
         ydl_opts = {
-            'format': 'bestaudio',
+            'format': 'bestaudio/best',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
-                'preferredcodec': '.mp3',
+                'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
         }
-
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-
-        for file in os.listdir("./queue/"):
+        for file in os.listdir("./"):
             if file.endswith(".mp3"):
                 os.rename(file, "song.mp3")
+        vc.play(discord.FFmpegPCMAudio("song.mp3"))
 
-        ctx.voice_client.play(discord.FFmpegPCMAudio("song.mp3"))
+    @commands.command(aliases=['leave', 'quit', 'stop'])
+    async def disconnect(self, ctx):
+        await ctx.voice_client.disconnect()
+        await ctx.send('Disconnected.')
 
     @commands.command()
     async def pause(self, ctx):
@@ -71,4 +66,4 @@ class Music(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(Music(client))
+    client.add_cog(Bot(client))
