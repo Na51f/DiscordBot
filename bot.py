@@ -1,7 +1,9 @@
 import discord
 from discord.ext import commands
 import youtube_dl
+import ffmpeg
 import os
+
 
 class Bot(commands.Cog):
     def __init__(self, client):
@@ -24,6 +26,7 @@ class Bot(commands.Cog):
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, url):
+        await self.join(ctx)
         vc = ctx.voice_client
         song_there = os.path.isfile("song.mp3")
         try:
