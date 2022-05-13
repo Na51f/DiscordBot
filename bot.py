@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
-import youtube_dl
-import ffmpeg
 import os
+import urllib.request
+import re
+import validators
+import yt_dlp
 
 
 class Bot(commands.Cog):
@@ -11,8 +13,8 @@ class Bot(commands.Cog):
         self.paused = False
 
     @commands.command()
-    async def repeat(self, ctx, arg):
-        await ctx.send(arg)
+    async def repeat(self, ctx, *, args):
+        await ctx.send(args)
 
     @commands.command()
     async def join(self, ctx):
@@ -25,8 +27,11 @@ class Bot(commands.Cog):
             await ctx.voice_client.move_to(vc)
 
     @commands.command(aliases=['p'])
-    async def play(self, ctx, url):
+    async def play(self, ctx, *args):
         await self.join(ctx)
+
+        url = search(args)
+
         vc = ctx.voice_client
         song_there = os.path.isfile("song.mp3")
         try:
@@ -44,14 +49,15 @@ class Bot(commands.Cog):
                 'preferredquality': '192',
             }],
         }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         for file in os.listdir("./"):
             if file.endswith(".mp3"):
                 os.rename(file, "song.mp3")
         vc.play(discord.FFmpegPCMAudio("song.mp3"))
 
-    @commands.command(aliases=['leave', 'quit', 'stop'])
+    @commands.command(aliases=['leave', 'quit', 'stop', 'skip'])
     async def disconnect(self, ctx):
         await ctx.voice_client.disconnect()
         await ctx.send('Disconnected.')
@@ -67,6 +73,28 @@ class Bot(commands.Cog):
             await ctx.send('Resumed.')
             self.paused = False
 
+    @commands.command(aliases=['pl', 'playlast'])
+    async def play_last(self, ctx):
+        await self.join(ctx)
+        vc = ctx.voice_client
+        vc.play(discord.FFmpegPCMAudio("song.mp3"))
+
+    @commands.command()
+    async def backflip(self, ctx):
+        await ctx.send('```*Does a backflip*```')
+        await ctx.send('https://tenor.com/view/teamwork-back-flip-wearing-pants-gif-16289206')
+
 
 def setup(client):
     client.add_cog(Bot(client))
+
+
+def search(args):
+    s = ' '.join(args).strip()
+    if validators.url(s):
+        return s
+
+    html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + s.replace(" ", "+"))
+    video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+
+    return "https://www.youtube.com/watch?v=" + video_ids[0]
