@@ -8,15 +8,16 @@ import yt_dlp
 
 
 class Bot(commands.Cog):
+    paused = False
+
     def __init__(self, client):
         self.client = client
-        self.paused = False
 
     @commands.command()
     async def repeat(self, ctx, *, args):
         await ctx.send(args)
 
-    @commands.command()
+    @commands.command(aliases=['j'])
     async def join(self, ctx):
         if ctx.author.voice is None:
             await ctx.send("You're not in a voice channel")
@@ -33,10 +34,10 @@ class Bot(commands.Cog):
         url = search(args)
 
         vc = ctx.voice_client
-        song_there = os.path.isfile("song.mp3")
+        song_is_there = os.path.isfile("./resources/queues/song.mp3")
         try:
-            if song_there:
-                os.remove("song.mp3")
+            if song_is_there:
+                os.remove("./resources/queues/song.mp3")
         except PermissionError:
             await ctx.send("Wait for the current playing music to end or use the 'stop' command")
             return
@@ -54,17 +55,18 @@ class Bot(commands.Cog):
             ydl.download([url])
         for file in os.listdir("./"):
             if file.endswith(".mp3"):
-                os.rename(file, "song.mp3")
-        vc.play(discord.FFmpegPCMAudio("song.mp3"))
+                os.replace(file, "./resources/queues/" + file)
+                os.rename("./resources/queues/" + file, "./resources/queues/song.mp3")
+        vc.play(discord.FFmpegPCMAudio("./resources/queues/song.mp3"))
 
-    @commands.command(aliases=['leave', 'quit', 'stop', 'skip'])
+    @commands.command(aliases=['leave', 'quit', 'stop', 'dc', 'skip'])
     async def disconnect(self, ctx):
         await ctx.voice_client.disconnect()
         await ctx.send('Disconnected.')
 
     @commands.command()
     async def pause(self, ctx):
-        if self.paused is False:
+        if Bot.paused is False:
             await ctx.voice_client.pause()
             await ctx.send('Paused.')
             self.paused = True
