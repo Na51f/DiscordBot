@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 from discord.ext import commands
 import os
@@ -5,10 +7,12 @@ import urllib.request
 import re
 import validators
 import yt_dlp
+from suggestion import Suggestion
 
 
 class Bot(commands.Cog):
     paused = False
+    queues = "./resources/queues/"
 
     def __init__(self, client):
         self.client = client
@@ -34,10 +38,10 @@ class Bot(commands.Cog):
         url = search(args)
 
         vc = ctx.voice_client
-        song_is_there = os.path.isfile("./resources/queues/song.mp3")
+        song_is_there = os.path.isfile(Bot.queues + "song.mp3")
         try:
             if song_is_there:
-                os.remove("./resources/queues/song.mp3")
+                os.remove(Bot.queues + "song.mp3")
         except PermissionError:
             await ctx.send("Wait for the current playing music to end or use the 'stop' command")
             return
@@ -55,9 +59,9 @@ class Bot(commands.Cog):
             ydl.download([url])
         for file in os.listdir("./"):
             if file.endswith(".mp3"):
-                os.replace(file, "./resources/queues/" + file)
-                os.rename("./resources/queues/" + file, "./resources/queues/song.mp3")
-        vc.play(discord.FFmpegPCMAudio("./resources/queues/song.mp3"))
+                os.replace(file, Bot.queues + file)
+                os.rename(Bot.queues + file, Bot.queues + "song.mp3")
+        vc.play(discord.FFmpegPCMAudio(Bot.queues + "song.mp3"))
 
     @commands.command(aliases=['leave', 'quit', 'stop', 'dc', 'skip'])
     async def disconnect(self, ctx):
@@ -79,12 +83,20 @@ class Bot(commands.Cog):
     async def play_last(self, ctx):
         await self.join(ctx)
         vc = ctx.voice_client
-        vc.play(discord.FFmpegPCMAudio("song.mp3"))
+        vc.play(discord.FFmpegPCMAudio(Bot.queues + "song.mp3"))
 
     @commands.command()
     async def backflip(self, ctx):
         await ctx.send('```*Does a backflip*```')
         await ctx.send('https://tenor.com/view/teamwork-back-flip-wearing-pants-gif-16289206')
+
+    @commands.command()
+    async def suggestion(self, ctx, *args):
+        user = ctx.author
+        date = datetime.date.today()
+        time = datetime.datetime.now().time()
+        sug = Suggestion(user, args, date, time)
+        sug.to_json("./resources/suggestion.json")
 
 
 def setup(client):
