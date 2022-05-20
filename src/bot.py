@@ -1,13 +1,11 @@
-import datetime
-
 import discord
 from discord.ext import commands
-import os
 import urllib.request
 import re
 import validators
 import yt_dlp
-from suggestion import Suggestion
+from suggestion import *
+from datetime import datetime
 
 
 class Bot(commands.Cog):
@@ -92,11 +90,13 @@ class Bot(commands.Cog):
 
     @commands.command()
     async def suggestion(self, ctx, *args):
-        user = ctx.author
-        date = datetime.date.today()
-        time = datetime.datetime.now().time()
-        sug = Suggestion(user, args, date, time)
-        sug.to_json("./resources/suggestion.json")
+        user = ctx.message.author.name
+        uid = ctx.message.author.id
+        query = ''.join(args).strip()
+        date = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+        sug = Suggestion(user, uid, query, date)
+        to_json(sug, "./resources/suggestion.json")
+        await ctx.send('Suggestion sent to owner of this bot.')
 
 
 def setup(client):

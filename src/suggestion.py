@@ -1,18 +1,33 @@
 import json
+import os
+from dataclasses import dataclass
 
 
+@dataclass(frozen=True, order=True)
 class Suggestion:
-    def __init__(self, user, suggestion, date, time):
-        self.user = user
-        self.suggestion = suggestion
-        self.date = date
-        self.time = time
+    user: str = ""
+    uid: int = 0
+    query: str = ""
+    datetime: str = ""
 
     @classmethod
     def from_json(cls, string):
         json_dict = json.loads(string)
         return cls(**json_dict)
 
-    def to_json(self, path):
-        with open(path, 'w') as file:
-            json.dump(self, file, indent=2)
+
+def encode_suggestion(suggestion):
+    if isinstance(suggestion, Suggestion):
+        return {
+            'user': suggestion.user,
+            'uid': suggestion.uid,
+            'query': suggestion.query,
+            'datetime': suggestion.datetime,
+        }
+
+
+def to_json(suggestion, path):
+    with open(path, 'a') as file:
+        if os.path.getsize(path) != 0:
+            file.write(',\n')
+        json.dump(suggestion, file, default=encode_suggestion, indent=2)
