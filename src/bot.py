@@ -92,7 +92,7 @@ class Bot(commands.Cog):
     async def suggestion(self, ctx, *args):
         user = ctx.message.author.name
         uid = ctx.message.author.id
-        query = ''.join(args).strip()
+        query = ' '.join(args).strip()
         date = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         sug = Suggestion(user, uid, query, date)
         to_json(sug, "./resources/suggestion.json")
