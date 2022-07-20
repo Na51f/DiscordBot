@@ -98,6 +98,12 @@ class Bot(commands.Cog):
         to_json(sug, "./resources/suggestion.json")
         await ctx.send('Suggestion sent to owner of this bot.')
 
+    @commands.command()
+    async def mute_me(self, ctx):
+        server = ctx.message.guild
+        await server.create_role(name='Test')
+        print(type(self.client))
+
 
 def setup(client):
     client.add_cog(Bot(client))
