@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 import urllib.request
@@ -99,10 +101,14 @@ class Bot(commands.Cog):
         await ctx.send('Suggestion sent to owner of this bot.')
 
     @commands.command()
-    async def mute_me(self, ctx):
-        server = ctx.message.guild
-        await server.create_role(name='Test')
-        print(type(self.client))
+    async def outro(self, ctx):
+        await self.join(ctx)
+        vc = ctx.voice_client
+        vc.play(discord.FFmpegPCMAudio("./resources/audio/outro.mp3"))
+        await asyncio.sleep(15)
+        await ctx.guild.get_member(ctx.author.id).move_to(None)
+        await asyncio.sleep(8)
+        await self.disconnect(ctx)
 
 
 def setup(client):
